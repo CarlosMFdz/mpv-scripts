@@ -450,6 +450,14 @@ function speed_transition(_, subend)
 end
 
 function toggle()
+	-- Require subtitles to be available; otherwise, this script would have no effect
+	local sid = mp.get_property_native('sid')
+	if not enable and (not sid or sid == '0') then
+		mp.osd_message('speed-transition requires subtitle')
+		msg.warn('no subtitles; not enabling')
+		return
+	end
+
 	if not enable then
 		normalspeed = mp.get_property('speed')
 		local calculated_readaheadsecs = math.max(5, readahead_secs, cfg.maxSkip + cfg.leadin,
