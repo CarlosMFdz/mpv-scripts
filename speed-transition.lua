@@ -80,6 +80,14 @@ end
 
 function restore_normalspeed()
 	if not cfg.skipmode then
+		-- If user increased speed beyond normalspeed during speedup, adopt it as new speedup
+		if state == 1 then
+			local fastspeed = tonumber(mp.get_property('speed'))
+			local normal = tonumber(normalspeed)
+			if fastspeed and normal and fastspeed > normal then
+				cfg.speedup = fastspeed
+			end
+		end
 		mp.set_property('speed', normalspeed)
 		if video_sync then
 			mp.set_property('video-sync', video_sync)
