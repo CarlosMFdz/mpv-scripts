@@ -36,6 +36,8 @@ function shouldIgnore(subtext)
 		if st:find(cfg.subPattern) then
 			return true
 		end
+	else
+		return false
 	end
 end
 
@@ -231,7 +233,6 @@ function check_should_speedup(subend)
 
 	local shouldspeedup = nextsub and nextsub >= cfg.lookahead - cfg.leadin
 	local speedup_begin = subend
-	msg.trace('check_should_speedup final: nextsub=' .. (nextsub or 'nil') .. ', shouldspeedup=' .. tostring(shouldspeedup))
 	if shouldspeedup then
 		msg.debug('check_should_speedup()')
 		msg.debug('  shouldspeedup:', tostring(shouldspeedup))
