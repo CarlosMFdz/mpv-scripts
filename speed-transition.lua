@@ -3,7 +3,7 @@ local msg = require 'mp.msg'
 
 cfg = {
 	lookahead = 5,            --if the next subtitle appears after this threshold then speedup
-	speedup = 2,              --the value that 'speed' is set to during speedup
+	speedup = 6,              --the value that 'speed' is set to during speedup
 	leadin = 1,               --seconds to stop short of the next subtitle
 	sub_timeout = 5,          --if a subtitle is visible for longer than this value, speedup begins; set to 0 to disable
 	skipmode = false,         --instead of speeding up playback seek to the next known subtitle
@@ -25,7 +25,7 @@ opt.read_options(cfg)
 readahead_secs = mp.get_property_native('demuxer-readahead-secs')
 normalspeed = mp.get_property_native('speed')
 
-enable = false
+enable = true
 state = 0
 firstskip = true --make the first skip in skip mode not have to wait for skipdelay
 aid = nil
