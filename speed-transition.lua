@@ -33,12 +33,16 @@ aid = nil
 function shouldIgnore(subtext)
 	if cfg.ignorePattern and subtext and subtext ~= '' then
 		local st = subtext:match('^%s*(.-)%s*$') -- trim whitespace
-		if st:find(cfg.subPattern) then
+		local clean_st = st -- no ASS stripping needed
+		msg.trace('shouldIgnore: raw="' .. subtext .. '" clean="' .. clean_st .. '"')
+		if clean_st:find(cfg.subPattern) then
+			msg.trace('shouldIgnore: MATCH -> true')
 			return true
+		else
+			msg.trace('shouldIgnore: NO MATCH -> false')
 		end
-	else
-		return false
 	end
+	return false
 end
 
 function clamp(v, l, u)
@@ -197,29 +201,23 @@ function check_should_speedup(subend)
 		mp.set_property_bool('sub-visibility', false)
 	end
 
-	mp.commandv('sub-step', 1)
-
-	local nextsubstart = mp.get_property_number('sub-start')
-	if nextsubstart then
-		nextsubstart = nextsubstart * subspeed + subdelay
-	end
-
-	if cfg.ignorePattern and nextsubstart and subend < nextsubstart then
-		repeat
-			local ignore = shouldIgnore(mp.get_property('sub-text'))
-			if ignore then
-				local t_nextsubstart = mp.get_property_number('sub-end')
-				if t_nextsubstart then
-					t_nextsubstart = t_nextsubstart * subspeed + subdelay
-				end
-				if t_nextsubstart and t_nextsubstart > nextsubstart then
-					nextsubstart = t_nextsubstart
-					mp.commandv('sub-step', 1)
-				else
-					break
-				end
-			end
-		until not ignore
+	local steps_forward = 0
+	local nextsubstart
+	msg.trace('check_should_speedup: starting ignore peek loop')
+	repeat
+		mp.commandv('sub-step', 1)
+		steps_forward = steps_forward + 1
+		local peeked_text = mp.get_property('sub-text') or ''
+		nextsubstart = mp.get_property_number('sub-start')
+		if nextsubstart then
+			nextsubstart = nextsubstart * subspeed + subdelay
+		end
+		local ignore_peek = cfg.ignorePattern and shouldIgnore(peeked_text)
+		msg.trace('peek step=' .. steps_forward .. ', text="' .. peeked_text .. '", ignore=' .. tostring(ignore_peek) .. ', nextsubstart=' .. (formatTime(nextsubstart) or 'nil'))
+	until not ignore_peek
+	msg.trace('ignore loop ended after ' .. steps_forward .. ' steps, nextsubstart=' .. (formatTime(nextsubstart) or 'nil'))
+	for i = 1, steps_forward do
+		mp.commandv('sub-step', -1)
 	end
 
 	mp.set_property_number('sub-delay', subdelay)
@@ -242,6 +240,7 @@ function check_should_speedup(subend)
 
 	local shouldspeedup = nextsub and nextsub >= cfg.lookahead - cfg.leadin
 	local speedup_begin = subend
+	msg.trace('check_should_speedup final: nextsub=' .. (nextsub or 'nil') .. ', shouldspeedup=' .. tostring(shouldspeedup))
 	if shouldspeedup then
 		msg.debug('check_should_speedup()')
 		msg.debug('  shouldspeedup:', tostring(shouldspeedup))
@@ -412,6 +411,14 @@ function speed_transition(_, subend)
 		return
 	end
 
+	local current_sub_text = mp.get_property('sub-text')
+	msg.debug('speed_transition: current="' .. (current_sub_text or 'nil') .. '"')
+
+	local ignore_current = cfg.ignorePattern and shouldIgnore(current_sub_text)
+	if ignore_current then
+		msg.debug('speed_transition: ignoring current sub but peeking anyway')
+	end
+
 	msg.debug('speed_transition()')
 
 	if state == 3 or (state == 2 and not cfg.exact_skip) then
@@ -432,16 +439,17 @@ function speed_transition(_, subend)
 	local t_nextsub, t_shouldspeedup, t_speedup_zone_begin = check_should_speedup(subend)
 	if t_shouldspeedup then
 		if state ~= 0 then
-			msg.debug('  ->reset: state > 0')
-			restore_normalspeed()
-			reset_state()
+			-- During speedup, just update zones without resetting speed
+			speedup_zone_end = math.max(speedup_zone_end or 0, t_speedup_zone_begin + t_nextsub - cfg.leadin)
+			msg.debug('  updating speedup_zone_end:', formatTime(speedup_zone_end))
+		else
+			nextsub, shouldspeedup, speedup_zone_begin = t_nextsub, t_shouldspeedup, t_speedup_zone_begin
+			speedup_zone_end = speedup_zone_begin + nextsub - cfg.leadin
+			msg.debug('  speedup_zone_end:', formatTime(speedup_zone_end) or '')
 		end
-		nextsub, shouldspeedup, speedup_zone_begin = t_nextsub, t_shouldspeedup, t_speedup_zone_begin
-		speedup_zone_end = speedup_zone_begin + nextsub - cfg.leadin
-		msg.debug('  speedup_zone_end:', formatTime(speedup_zone_end) or '')
 	else
 		if state ~= 0 then
-			msg.debug('  ->reset: state > 0')
+			msg.debug('  ->reset: no speedup needed')
 			restore_normalspeed()
 		end
 		reset_state()
