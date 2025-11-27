@@ -37,7 +37,6 @@ function shouldIgnore(subtext)
 			return true
 		end
 	end
-	return false
 end
 
 function clamp(v, l, u)
