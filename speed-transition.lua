@@ -33,13 +33,8 @@ aid = nil
 function shouldIgnore(subtext)
 	if cfg.ignorePattern and subtext and subtext ~= '' then
 		local st = subtext:match('^%s*(.-)%s*$') -- trim whitespace
-		local clean_st = st -- no ASS stripping needed
-		msg.trace('shouldIgnore: raw="' .. subtext .. '" clean="' .. clean_st .. '"')
-		if clean_st:find(cfg.subPattern) then
-			msg.trace('shouldIgnore: MATCH -> true')
+		if st:find(cfg.subPattern) then
 			return true
-		else
-			msg.trace('shouldIgnore: NO MATCH -> false')
 		end
 	end
 	return false
@@ -203,7 +198,6 @@ function check_should_speedup(subend)
 
 	local steps_forward = 0
 	local nextsubstart
-	msg.trace('check_should_speedup: starting ignore peek loop')
 	repeat
 		mp.commandv('sub-step', 1)
 		steps_forward = steps_forward + 1
@@ -213,10 +207,8 @@ function check_should_speedup(subend)
 			nextsubstart = nextsubstart * subspeed + subdelay
 		end
 		local ignore_peek = cfg.ignorePattern and shouldIgnore(peeked_text)
-		msg.trace('peek step=' .. steps_forward .. ', text="' .. peeked_text .. '", ignore=' .. tostring(ignore_peek) .. ', nextsubstart=' .. (formatTime(nextsubstart) or 'nil'))
 	until not ignore_peek
-	msg.trace('ignore loop ended after ' .. steps_forward .. ' steps, nextsubstart=' .. (formatTime(nextsubstart) or 'nil'))
-	for i = 1, steps_forward do
+	for _ = 1, steps_forward do
 		mp.commandv('sub-step', -1)
 	end
 
@@ -411,14 +403,6 @@ function speed_transition(_, subend)
 		return
 	end
 
-	local current_sub_text = mp.get_property('sub-text')
-	msg.debug('speed_transition: current="' .. (current_sub_text or 'nil') .. '"')
-
-	local ignore_current = cfg.ignorePattern and shouldIgnore(current_sub_text)
-	if ignore_current then
-		msg.debug('speed_transition: ignoring current sub but peeking anyway')
-	end
-
 	msg.debug('speed_transition()')
 
 	if state == 3 or (state == 2 and not cfg.exact_skip) then
@@ -439,9 +423,7 @@ function speed_transition(_, subend)
 	local t_nextsub, t_shouldspeedup, t_speedup_zone_begin = check_should_speedup(subend)
 	if t_shouldspeedup then
 		if state ~= 0 then
-			-- During speedup, just update zones without resetting speed
 			speedup_zone_end = math.max(speedup_zone_end or 0, t_speedup_zone_begin + t_nextsub - cfg.leadin)
-			msg.debug('  updating speedup_zone_end:', formatTime(speedup_zone_end))
 		else
 			nextsub, shouldspeedup, speedup_zone_begin = t_nextsub, t_shouldspeedup, t_speedup_zone_begin
 			speedup_zone_end = speedup_zone_begin + nextsub - cfg.leadin
@@ -449,7 +431,7 @@ function speed_transition(_, subend)
 		end
 	else
 		if state ~= 0 then
-			msg.debug('  ->reset: no speedup needed')
+			msg.debug('  ->reset: state > 0')
 			restore_normalspeed()
 		end
 		reset_state()
