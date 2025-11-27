@@ -16,7 +16,7 @@ cfg = {
 	--video processing then normal playback may not resume in sync with the video. If 'avsync' > leadin--
 	--then this disables the audio so that we can ensure normal playback resumes on time.
 	dropOnAVdesync = true,
-	ignorePattern = false,    --if true, subtitles are matched against 'subPattern'. A successful match will be treated as if there was no subtitle
+	ignorePattern = true,    --if true, subtitles are matched against 'subPattern'. A successful match will be treated as if there was no subtitle
 	subPattern = '^[#♯♩♪♬♫🎵🎶%[%(]+.*[#♯♩♪♬♫🎵🎶%]%)]+$'
 }
 
