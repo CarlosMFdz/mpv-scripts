@@ -198,17 +198,12 @@ function check_should_speedup(subend)
 	end
 
 	local steps_forward = 0
-	local nextsubstart
 	repeat
 		mp.commandv('sub-step', 1)
 		steps_forward = steps_forward + 1
-		local peeked_text = mp.get_property('sub-text') or ''
-		nextsubstart = mp.get_property_number('sub-start')
-		if nextsubstart then
-			nextsubstart = nextsubstart * subspeed + subdelay
-		end
-		local ignore_peek = cfg.ignorePattern and shouldIgnore(peeked_text)
-	until not ignore_peek
+		local ignore = cfg.ignorePattern and shouldIgnore(mp.get_property('sub-text') or '')
+		nextsubstart = (mp.get_property_number('sub-start') or 0) * subspeed + subdelay
+	until not ignore
 	for _ = 1, steps_forward do
 		mp.commandv('sub-step', -1)
 	end
