@@ -25,7 +25,7 @@ opt.read_options(cfg)
 readahead_secs = mp.get_property_native('demuxer-readahead-secs')
 normalspeed = mp.get_property_native('speed')
 
-enable = true
+enable = false
 state = 0
 firstskip = true --make the first skip in skip mode not have to wait for skipdelay
 aid = nil
@@ -547,3 +547,7 @@ mp.add_key_binding('alt+9', 'decrease_leadin', function() change_leadin(-0.25) e
 mp.add_key_binding('alt+8', 'increase_lookahead', function() change_lookAhead(0.25) end)
 mp.add_key_binding('alt+7', 'decrease_lookahead', function() change_lookAhead(-0.25) end)
 mp.register_event('file-loaded', reset_on_file_load)
+
+if not enable then
+	toggle()
+end
